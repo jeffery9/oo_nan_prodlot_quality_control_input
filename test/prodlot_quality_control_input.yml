@@ -1,0 +1,406 @@
+- 
+  ------  Prodlot Quality Control on Input  ------
+- 
+  In order to test functionality of set Quality Control Tests to Production Lots
+  in Input Pickings...
+- 
+  I create a Product without Quality Control
+-
+  !record {model: product.product, id: product_product_wo_qc0}:
+    name: Product without quality control
+    type: product
+    categ_id: product.cat0
+    procure_method: make_to_stock
+    supply_method: buy
+    cost_method: standard
+    valuation: manual_periodic
+    standard_price: 200.0
+    uom_id: product.product_uom_unit
+    uom_po_id: product.product_uom_unit
+
+- 
+  I create a Production Lot of Product
+- 
+  !record {model: stock.production.lot, id: prodlot_wo_qc0}:
+    product_id: nan_prodlot_quality_control_input.product_product_wo_qc0
+
+- 
+  I create a Product with the generic template assigned with Input trigger
+-
+  !record {model: product.product, id: product_product_generic0}:
+    name: Product with generic test
+    type: product
+    categ_id: product.cat0
+    procure_method: make_to_stock
+    supply_method: buy
+    cost_method: standard
+    valuation: manual_periodic
+    standard_price: 300.0
+    uom_id: product.product_uom_unit
+    uom_po_id: product.product_uom_unit
+    qc_template_trigger_ids:
+      - sequence: 1
+        trigger_id: nan_prodlot_quality_control_input.qc_trigger_input
+        template_type: generic
+        template_id: nan_prodlot_quality_control_input.qc_test_template_generic0
+
+- 
+  I create a Production Lot of Product
+- 
+  !record {model: stock.production.lot, id: prodlot_generic0}:
+    product_id: nan_prodlot_quality_control_input.product_product_generic0
+
+- 
+  I create a Product with the generic and specific template assigned with Input trigger
+-
+  !record {model: product.product, id: product_product_related0}:
+    name: Product with specific test
+    type: product
+    categ_id: product.cat0
+    procure_method: make_to_stock
+    supply_method: buy
+    cost_method: standard
+    valuation: manual_periodic
+    standard_price: 450.0
+    uom_id: product.product_uom_unit
+    uom_po_id: product.product_uom_unit
+    qc_template_trigger_ids:
+      - sequence: 1
+        trigger_id: nan_prodlot_quality_control_input.qc_trigger_input
+        template_type: generic
+        template_id: nan_prodlot_quality_control_input.qc_test_template_generic0
+      - sequence: 2
+        trigger_id: nan_prodlot_quality_control_input.qc_trigger_input
+        template_type: related
+        template_id: nan_prodlot_quality_control_input.qc_test_template_related0
+
+- 
+  Checking the Product has two Template Trigger lines
+-
+  !assert {model: product.product, id: product_product_related0, string: The Product with generic and specific templates doesn't have two lines of Template Triggers!}:
+    - len(qc_template_trigger_ids) == 2
+
+- 
+  I create a Production Lot of Product
+- 
+  !record {model: stock.production.lot, id: prodlot_related0}:
+    product_id: nan_prodlot_quality_control_input.product_product_related0
+
+- 
+  Creating an Input Picking with three movements for the three Lots
+- 
+  !record {model: stock.picking, id: stock_picking_input0}:
+    type: in
+#    name: AC120002
+    partner_id: base.main_partner
+    address_id: base.main_address
+    invoice_state: none
+    move_type: direct
+    date: '2012-02-21 17:19:01'
+    max_date: '2012-02-21 17:19:31'
+    min_date: '2012-02-21 17:19:17'
+    move_lines:
+      - name: Product without quality control
+        product_id: nan_prodlot_quality_control_input.product_product_wo_qc0
+        prodlot_id: nan_prodlot_quality_control_input.prodlot_wo_qc0
+        product_uom: product.product_uom_unit
+        product_qty: 5.0
+        product_uos_qty: 5.0
+        location_id: stock.stock_location_suppliers
+        location_dest_id: stock.stock_location_stock
+        company_id: base.main_company
+      - name: Product with generic test
+        product_id: nan_prodlot_quality_control_input.product_product_generic0
+        prodlot_id: nan_prodlot_quality_control_input.prodlot_generic0
+        product_uom: product.product_uom_unit
+        product_qty: 3.0
+        product_uos_qty: 3.0
+        location_id: stock.stock_location_suppliers
+        location_dest_id: stock.stock_location_stock
+        company_id: base.main_company
+      - name: Product with specific test
+        product_id: nan_prodlot_quality_control_input.product_product_related0
+        prodlot_id: nan_prodlot_quality_control_input.prodlot_related0
+        product_uom: product.product_uom_unit
+        product_qty: 1.0
+        product_uos_qty: 1.0
+        location_id: stock.stock_location_suppliers
+        location_dest_id: stock.stock_location_stock
+        company_id: base.main_company
+    company_id: base.main_company
+
+- 
+  Checking the Production Lot of product without Quality Control is in 'Valid' 
+  state, doesn't have current Test nor any Trigger Test line
+-
+  !assert {model: stock.production.lot, id: prodlot_wo_qc0, string: The Lot of product without Quality Control is not in the expected 'Valid' state!}:
+    - state == 'valid'
+    - not current_qc_test_id
+    - len(qc_test_trigger_ids) == 0
+
+- 
+  Checking the Production Lot of product with generic QC Template is in 
+  'Pending Test' state and it has only one Test Trigger 
+#-
+#  !assert {model: stock.production.lot, id: prodlot_generic0, string: The lot of product with generic qc template is not in the expected 'pending test' state or it hasn't the expected number of test triggers (expected only one)!}:
+#    - state == 'pending_test'
+#    - current_qc_test_id.test_template_id.id == ref('qc_test_template_generic0')
+#    - len(qc_test_trigger_ids) == 1
+-
+  !python {model: stock.production.lot}: |
+    lot = self.browse(cr, uid, ref('prodlot_generic0'), context)
+    assert lot.state == 'pending_test', "The State of Lot is not the expected 'pending_test'. It is '%s'" % lot.state
+    assert lot.current_qc_test_id.test_template_id.id == ref('qc_test_template_generic0'), "The template of current Test Trigger is not the expected '%d'. It is '%d'" % (ref('qc_test_template_generic0'), lot.current_qc_test_id.test_template_id.id)
+    assert len(lot.qc_test_trigger_ids) == 1, "The number of Test Trigger lines is not 1 as expected. It is %d" % len(lot.qc_test_trigger_ids)
+
+- 
+  Checking the Production Lot of product with generic and related QC Template 
+  is in 'Pending Test' state and it has two Test Trigger 
+#-
+#  !assert {model: stock.production.lot, id: prodlot_related0, string: The lot of product with generic and related qc template is not in the expected 'pending test' state or it hasn't the expected number of test triggers (expected only two)!}:
+#    - state == 'pending_test'
+#    - current_qc_test_id.test_template_id.id == ref('qc_test_template_generic0')
+#    - len(qc_test_trigger_ids) == 2
+-
+  !python {model: stock.production.lot}: |
+    lot = self.browse(cr, uid, ref('prodlot_related0'), context)
+    assert lot.state == 'pending_test', "The State of Lot is not the expected 'pending_test'. It is '%s'" % lot.state
+    assert lot.current_qc_test_id.test_template_id.id == ref('qc_test_template_generic0'), "The template of current Test Trigger is not the expected '%d'. It is '%d'" % (ref('qc_test_template_generic0'), lot.current_qc_test_id.test_template_id.id)
+    assert len(lot.qc_test_trigger_ids) == 2, "The number of Test Trigger lines is not 2 as expected. It is %d" % len(lot.qc_test_trigger_ids)
+
+-
+  Filling up the two current Quality Tests with valid values and 'Confirm' it
+-
+  !python {model: stock.production.lot}: |
+    import netsvc
+    
+    test_line_proxy = self.pool.get('qc.test.line')
+    wf_service = netsvc.LocalService("workflow")
+    
+    lot1 = self.browse(cr, uid, ref('prodlot_generic0'), context)
+    lot2 = self.browse(cr, uid, ref('prodlot_related0'), context)
+    
+    test_line_proxy.write(cr, uid, [
+          lot1.current_qc_test_id.test_line_ids[0].id,
+          lot2.current_qc_test_id.test_line_ids[0].id,
+        ], {'actual_value_ql': ref('qc_posible_value_yes0')}, context)
+    
+    wf_service.trg_validate(uid, 'qc.test', lot1.current_qc_test_id.id, 
+      'confirm', cr)
+    wf_service.trg_validate(uid, 'qc.test', lot2.current_qc_test_id.id, 
+      'confirm', cr)
+
+- 
+  Checking the Production Lot of product with generic QC Template remains in 
+  'Pending Test' state and its test is success and in 'Waiting' state 
+-
+  !assert {model: stock.production.lot, id: prodlot_generic0, string: The lot of product with generic qc template is not in the expected 'pending test' state or its test is not in expected 'Waiting' state!}:
+    - state == 'pending_test'
+    - current_qc_test_id.state == 'waiting'
+    - current_qc_test_id.success == True
+
+- 
+  Checking the Production Lot of product with generic and related QC Template 
+  remains in 'Pending Test' state and its test is success and in 'Waiting' state
+-
+  !assert {model: stock.production.lot, id: prodlot_related0, string: The lot of product with generic and related qc template is not in the expected 'pending test' state or its test is not in expected 'Waiting' state!}:
+    - state == 'pending_test'
+    - current_qc_test_id.state == 'waiting'
+    - current_qc_test_id.success == True
+
+-
+  Aproving the two current Quality Tests 
+-
+  !python {model: stock.production.lot}: |
+    import netsvc
+    wf_service = netsvc.LocalService("workflow")
+    
+    lot1 = self.browse(cr, uid, ref('prodlot_generic0'), context)
+    lot2 = self.browse(cr, uid, ref('prodlot_related0'), context)
+    
+    wf_service.trg_validate(uid, 'qc.test', lot1.current_qc_test_id.id, 
+      'approve', cr)
+    wf_service.trg_validate(uid, 'qc.test', lot2.current_qc_test_id.id, 
+      'approve', cr)
+
+- 
+  Checking the Production Lot of product with generic QC Template is in 'Valid' 
+  state and its test is in 'Success' state 
+-
+  !assert {model: stock.production.lot, id: prodlot_generic0, string: The lot of product with generic qc template is not in the expected 'Valid' state or its test is not in expected 'Success' state!}:
+    - state == 'valid'
+    - current_qc_test_id.state == 'success'
+
+- 
+  Canceling the Quality Test of Lot with generic Template and checking test is 
+  in 'Draft' state and the Lot is in 'Pending Test'
+-
+  !python {model: stock.production.lot}: |
+    import netsvc
+    wf_service = netsvc.LocalService("workflow")
+    
+    lot = self.browse(cr, uid, ref('prodlot_generic0'), context)
+    print "First Test Trigger: %s (%d, %s)" % (str(lot.qc_test_trigger_ids[0]), lot.qc_test_trigger_ids[0].test_id.id, lot.qc_test_trigger_ids[0].test_id.state)
+    print "Current Trigger: %s (%d, %s)" % (str(lot.current_qc_test_trigger_id), lot.current_qc_test_trigger_id.test_id.id, lot.current_qc_test_trigger_id.test_id.state)
+    print "State: %s" % lot.state
+    
+    
+    wkf_instance_ids = self.pool.get('workflow.instance').search(cr, uid, [('wkf_id','=',16),('res_id','=',lot.id)], context=context)
+    for wkf_instance in self.pool.get('workflow.instance').browse(cr, uid, wkf_instance_ids):
+      print "Wkf instance %d: state=%s" % (wkf_instance.id, wkf_instance.state)
+    
+    wkf_trigger_ids = self.pool.get('workflow.triggers').search(cr, uid, [('instance_id','in',wkf_instance_ids)], context=context)
+    for wkf_trigger in self.pool.get('workflow.triggers').browse(cr, uid, wkf_trigger_ids):
+      print "Wkf trigger for instance %d (%s, %d): workitem=%d" % (wkf_trigger.instance_id.id, wkf_trigger.model, wkf_trigger.res_id, wkf_trigger.workitem_id.id)
+    
+    wkf_workitem_ids = self.pool.get('workflow.workitem').search(cr, uid, [('inst_id','in',wkf_instance_ids)], context=context)
+    print "Workitems: ",wkf_workitem_ids
+    for wkf_workitem in self.pool.get('workflow.workitem').browse(cr, uid, wkf_workitem_ids):
+      print "Wkf workitem for instance %d in activity %s: subflow_id=%d and state=%s" % (
+                wkf_workitem.inst_id.id, 
+                wkf_workitem.act_id.name, 
+                wkf_workitem.subflow_id.id, 
+                wkf_workitem.state)
+      if wkf_workitem.subflow_id:
+        print "Wkf instance %d (%s, %d): state=%s" % (
+            wkf_workitem.subflow_id.id, 
+            wkf_workitem.subflow_id.res_type, 
+            wkf_workitem.subflow_id.res_id, 
+            wkf_workitem.subflow_id.state)
+        
+        wkf_trigger_ids = self.pool.get('workflow.triggers').search(cr, uid, [('instance_id','=',wkf_workitem.subflow_id.id)], context=context)
+        for wkf_trigger in self.pool.get('workflow.triggers').browse(cr, uid, wkf_trigger_ids):
+          print "Wkf trigger for instance %d (%s, %d): workitem=%d" % (wkf_trigger.instance_id.id, wkf_trigger.model, wkf_trigger.res_id, wkf_trigger.workitem_id.id)
+    
+    
+    wf_service.trg_validate(uid, 'qc.test', lot.current_qc_test_id.id, 'cancel', cr)
+    
+    lot = self.browse(cr, uid, ref('prodlot_generic0'), context)
+    print "First Test Trigger: %s (%d, %s)" % (str(lot.qc_test_trigger_ids[0]), lot.qc_test_trigger_ids[0].test_id.id, lot.qc_test_trigger_ids[0].test_id.state)
+    print "Current Trigger: %s (%d, %s)" % (str(lot.current_qc_test_trigger_id), lot.current_qc_test_trigger_id.test_id.id, lot.current_qc_test_trigger_id.test_id.state)
+    print "State: %s" % lot.state
+    
+    
+    wkf_instance_ids = self.pool.get('workflow.instance').search(cr, uid, [('wkf_id','=',16),('res_id','=',lot.id)], context=context)
+    for wkf_instance in self.pool.get('workflow.instance').browse(cr, uid, wkf_instance_ids):
+      print "Wkf instance %d: state=%s" % (wkf_instance.id, wkf_instance.state)
+    
+    wkf_trigger_ids = self.pool.get('workflow.triggers').search(cr, uid, [('instance_id','in',wkf_instance_ids)], context=context)
+    for wkf_trigger in self.pool.get('workflow.triggers').browse(cr, uid, wkf_trigger_ids):
+      print "Wkf trigger for instance %d (%s, %d): workitem=%d" % (wkf_trigger.instance_id.id, wkf_trigger.model, wkf_trigger.res_id, wkf_trigger.workitem_id.id)
+    
+    wkf_workitem_ids = self.pool.get('workflow.workitem').search(cr, uid, [('inst_id','in',wkf_instance_ids)], context=context)
+    print "Workitems: ",wkf_workitem_ids
+    for wkf_workitem in self.pool.get('workflow.workitem').browse(cr, uid, wkf_workitem_ids):
+      print "Wkf workitem for instance %d in activity %s: subflow_id=%d and state=%s" % (
+                wkf_workitem.inst_id.id, 
+                wkf_workitem.act_id.name, 
+                wkf_workitem.subflow_id.id, 
+                wkf_workitem.state)
+      if wkf_workitem.subflow_id:
+        print "Wkf instance %d (%s, %d): state=%s" % (
+            wkf_workitem.subflow_id.id, 
+            wkf_workitem.subflow_id.res_type, 
+            wkf_workitem.subflow_id.res_id, 
+            wkf_workitem.subflow_id.state)
+        
+        wkf_trigger_ids = self.pool.get('workflow.triggers').search(cr, uid, [('instance_id','=',wkf_workitem.subflow_id.id)], context=context)
+        for wkf_trigger in self.pool.get('workflow.triggers').browse(cr, uid, wkf_trigger_ids):
+          print "Wkf trigger for instance %d (%s, %d): workitem=%d" % (wkf_trigger.instance_id.id, wkf_trigger.model, wkf_trigger.res_id, wkf_trigger.workitem_id.id)
+    
+- 
+  Checking the Production Lot of product with generic and related QC Template 
+  is in 'Pending Test' state because its current test is now the second test 
+  (related)
+#-
+#  !assert {model: stock.production.lot, id: prodlot_related0, string: The lot of product with generic and related qc template is not in the expected 'pending test' state!}:
+#    - state == 'pending_test'
+#    - current_qc_test_id.test_template_id.id == ref('qc_test_template_related0')
+#    - current_qc_test_id.state == 'draft'
+-
+  !python {model: stock.production.lot}: |
+    import netsvc
+    wf_service = netsvc.LocalService("workflow")
+    
+    lot = self.browse(cr, uid, ref('prodlot_related0'), context)
+    print "First Test Trigger: %s (%d, %s)" % (str(lot.qc_test_trigger_ids[0]), lot.qc_test_trigger_ids[0].test_id.id, lot.qc_test_trigger_ids[0].test_id.state)
+    print "Second Test Trigger: %s (%d, %s)" % (str(lot.qc_test_trigger_ids[1]), lot.qc_test_trigger_ids[1].test_id.id, lot.qc_test_trigger_ids[1].test_id.state)
+    print "Current Trigger: %s (%d, %s)" % (str(lot.current_qc_test_trigger_id), lot.current_qc_test_trigger_id.test_id.id, lot.current_qc_test_trigger_id.test_id.state)
+    print "State: %s" % lot.state
+    
+    
+    wkf_instance_ids = self.pool.get('workflow.instance').search(cr, uid, [('wkf_id','=',16),('res_id','=',lot.id)], context=context)
+    for wkf_instance in self.pool.get('workflow.instance').browse(cr, uid, wkf_instance_ids):
+      print "Wkf instance %d: state=%s" % (wkf_instance.id, wkf_instance.state)
+    
+    wkf_trigger_ids = self.pool.get('workflow.triggers').search(cr, uid, [('instance_id','in',wkf_instance_ids)], context=context)
+    for wkf_trigger in self.pool.get('workflow.triggers').browse(cr, uid, wkf_trigger_ids):
+      print "Wkf trigger for instance %d (%s, %d): workitem=%d" % (wkf_trigger.instance_id.id, wkf_trigger.model, wkf_trigger.res_id, wkf_trigger.workitem_id.id)
+    
+    wkf_workitem_ids = self.pool.get('workflow.workitem').search(cr, uid, [('inst_id','in',wkf_instance_ids)], context=context)
+    print "Workitems: ",wkf_workitem_ids
+    for wkf_workitem in self.pool.get('workflow.workitem').browse(cr, uid, wkf_workitem_ids):
+      print "Wkf workitem for instance %d in activity %s: subflow_id=%d and state=%s" % (
+                wkf_workitem.inst_id.id, 
+                wkf_workitem.act_id.name, 
+                wkf_workitem.subflow_id.id, 
+                wkf_workitem.state)
+      if wkf_workitem.subflow_id:
+        print "Wkf instance %d (%s, %d): state=%s" % (
+            wkf_workitem.subflow_id.id, 
+            wkf_workitem.subflow_id.res_type, 
+            wkf_workitem.subflow_id.res_id, 
+            wkf_workitem.subflow_id.state)
+        
+        wkf_trigger_ids = self.pool.get('workflow.triggers').search(cr, uid, [('instance_id','=',wkf_workitem.subflow_id.id)], context=context)
+        for wkf_trigger in self.pool.get('workflow.triggers').browse(cr, uid, wkf_trigger_ids):
+          print "Wkf trigger for instance %d (%s, %d): workitem=%d" % (wkf_trigger.instance_id.id, wkf_trigger.model, wkf_trigger.res_id, wkf_trigger.workitem_id.id)
+    
+    
+    #    wf_service.trg_validate(uid, 'stock.production.lot', lot.id, 'next_test', cr)
+    #    
+    #    
+    #    lot = self.browse(cr, uid, ref('prodlot_related0'), context)
+    #    print "First Test Trigger: %s (%d, %s)" % (str(lot.qc_test_trigger_ids[0]), lot.qc_test_trigger_ids[0].test_id.id, lot.qc_test_trigger_ids[0].test_id.state)
+    #    print "Second Test Trigger: %s (%d, %s)" % (str(lot.qc_test_trigger_ids[1]), lot.qc_test_trigger_ids[1].test_id.id, lot.qc_test_trigger_ids[1].test_id.state)
+    #    print "Current Trigger: %s (%d, %s)" % (str(lot.current_qc_test_trigger_id), lot.current_qc_test_trigger_id.test_id.id, lot.current_qc_test_trigger_id.test_id.state)
+    #    print "State: %s" % lot.state
+    #    
+    #    wkf_instance_ids = self.pool.get('workflow.instance').search(cr, uid, [('wkf_id','=',16),('res_id','=',lot.id)], context=context)
+    #    for wkf_instance in self.pool.get('workflow.instance').browse(cr, uid, wkf_instance_ids):
+    #      print "Wkf instance %d: state=%s" % (wkf_instance.id, wkf_instance.state)
+    #    
+    #    wkf_trigger_ids = self.pool.get('workflow.triggers').search(cr, uid, [('instance_id','in',wkf_instance_ids)], context=context)
+    #    for wkf_trigger in self.pool.get('workflow.triggers').browse(cr, uid, wkf_trigger_ids):
+    #      print "Wkf trigger for instance %d (%s, %d): workitem=%d" % (wkf_trigger.instance_id.id, wkf_trigger.model, wkf_trigger.res_id, wkf_trigger.workitem_id.id)
+    #    
+    #    wkf_workitem_ids = self.pool.get('workflow.workitem').search(cr, uid, [('inst_id','in',wkf_instance_ids)], context=context)
+    #    print "Workitems: ",wkf_workitem_ids
+    #    for wkf_workitem in self.pool.get('workflow.workitem').browse(cr, uid, wkf_workitem_ids):
+    #      print "Wkf workitem for instance %d in activity %s: subflow_id=%d and state=%s" % (
+    #                wkf_workitem.inst_id.id, 
+    #                wkf_workitem.act_id.name, 
+    #                wkf_workitem.subflow_id.id, 
+    #                wkf_workitem.state)
+    #      if wkf_workitem.subflow_id:
+    #        print "Wkf instance %d (%s, %d): state=%s" % (
+    #            wkf_workitem.subflow_id.id, 
+    #            wkf_workitem.subflow_id.res_type, 
+    #            wkf_workitem.subflow_id.res_id, 
+    #            wkf_workitem.subflow_id.state)
+    #        
+    #        wkf_trigger_ids = self.pool.get('workflow.triggers').search(cr, uid, [('instance_id','=',wkf_workitem.subflow_id.id)], context=context)
+    #        for wkf_trigger in self.pool.get('workflow.triggers').browse(cr, uid, wkf_trigger_ids):
+    #          print "Wkf trigger for instance %d (%s, %d): workitem=%d" % (wkf_trigger.instance_id.id, wkf_trigger.model, wkf_trigger.res_id, wkf_trigger.workitem_id.id)
+    
+    assert lot.state == 'pending_test', "The State of Lot is not the expected 'pending_test'. It is '%s'" % lot.state
+    assert lot.current_qc_test_id.test_template_id.id == ref('qc_test_template_related0'), "The template of current Test Trigger is not the expected '%d'. It is '%d'" % (ref('qc_test_template_related0'), lot.current_qc_test_id.test_template_id.id)
+
+
+-
+  END OK!!
+-
+  !python {model: stock.production.lot}: |
+    print "ADEU"
+
+

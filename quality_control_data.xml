@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="qc_trigger_input" model="qc.trigger">
+            <field name="name">Input</field>
+        </record>
+    </data>
+</openerp>
