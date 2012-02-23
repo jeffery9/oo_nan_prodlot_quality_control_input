@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data noupdate="1">
+        <record id="qc_posible_value_yes0" model="qc.posible.value">
+            <field name="name">Yes</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active" eval="1"/>
+        </record>
+        <record id="qc_posible_value_no0" model="qc.posible.value">
+            <field name="name">No</field>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active" eval="1"/>
+        </record>
+        
+        <record id="qc_proof_simpleproof0" model="qc.proof">
+            <field name="name">Simple Proof</field>
+            <field name="type">qualitative</field>
+            <field name="value_ids" eval="[(6,0,[ref('qc_posible_value_yes0'),ref('qc_posible_value_no0')])]"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active" eval="1"/>
+        </record>
+    </data>
+    <data noupdate="1">
+        <record id="qc_test_template_generic0" model="qc.test.template">
+            <field name="name">Generic Template for Input Lots</field>
+            <field name="type">generic</field>
+            <field name="fill_correct_values" eval="0"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active" eval="1"/>
+        </record>
+        <record id="qc_test_template_line_generic0" model="qc.test.template.line">
+            <field name="test_template_id" ref="qc_test_template_generic0"/>
+            <field name="sequence" eval="1"/>
+            <field name="proof_id" ref="qc_proof_simpleproof0"/>
+            <field name="type">qualitative</field>
+            <field name="valid_value_ids" eval="[(6,0,[ref('qc_posible_value_yes0')])]"/>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+    </data>
+    <data noupdate="1">
+        <record id="qc_test_template_related0" model="qc.test.template">
+            <field name="name">Specific Template for Input Lots</field>
+            <field name="type">related</field>
+            <field name="fill_correct_values" eval="0"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="active" eval="1"/>
+        </record>
+        <record id="qc_test_template_line_related0" model="qc.test.template.line">
+            <field name="test_template_id" ref="qc_test_template_related0"/>
+            <field name="sequence" eval="1"/>
+            <field name="proof_id" ref="qc_proof_simpleproof0"/>
+            <field name="type">qualitative</field>
+            <field name="valid_value_ids" eval="[(6,0,[ref('qc_posible_value_yes0')])]"/>
+            <field name="company_id" ref="base.main_company"/>
+        </record>
+    </data>
+</openerp>
