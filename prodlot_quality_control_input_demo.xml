@@ -54,4 +54,62 @@
             <field name="company_id" ref="base.main_company"/>
         </record>
     </data>
+    <data noupdate="1">
+        <record id="product_product_wo_qc0" model="product.product">
+            <field name="name">Product without Quality Control for Input Lots</field>
+            <field name="type">product</field>
+            <field name="categ_id" ref="product.cat0"/>
+            <field name="procure_method">make_to_stock</field>
+            <field name="supply_method">buy</field>
+            <field name="cost_method">standard</field>
+            <field name="type">product</field>
+            <field name="standard_price" eval="200.0"/>
+            <field name="uom_id" ref="product.product_uom_unit"/>
+        </record>
+        
+        <record id="product_product_generic0" model="product.product">
+            <field name="name">Product with One QC Test for Input Lots</field>
+            <field name="type">product</field>
+            <field name="categ_id" ref="product.cat0"/>
+            <field name="procure_method">make_to_stock</field>
+            <field name="supply_method">buy</field>
+            <field name="cost_method">standard</field>
+            <field name="type">product</field>
+            <field name="standard_price" eval="350.0"/>
+            <field name="uom_id" ref="product.product_uom_unit"/>
+        </record>
+        <record id="product_trigger_template0" model="product.qc.trigger.template">
+            <field name="product_id" ref="product_product_generic0"/>
+            <field name="sequence" eval="1"/>
+            <field name="trigger_id" ref="qc_trigger_input"/>
+            <field name="template_type">generic</field>
+            <field name="template_id" ref="qc_test_template_generic0"/>
+        </record>
+        
+        <record id="product_product_related0" model="product.product">
+            <field name="name">Product with Two QC Test for Input Lots</field>
+            <field name="type">product</field>
+            <field name="categ_id" ref="product.cat0"/>
+            <field name="procure_method">make_to_stock</field>
+            <field name="supply_method">buy</field>
+            <field name="cost_method">standard</field>
+            <field name="type">product</field>
+            <field name="standard_price" eval="500.0"/>
+            <field name="uom_id" ref="product.product_uom_unit"/>
+        </record>
+        <record id="product_trigger_template1" model="product.qc.trigger.template">
+            <field name="product_id" ref="product_product_related0"/>
+            <field name="sequence" eval="1"/>
+            <field name="trigger_id" ref="qc_trigger_input"/>
+            <field name="template_type">generic</field>
+            <field name="template_id" ref="qc_test_template_generic0"/>
+        </record>
+        <record id="product_trigger_template2" model="product.qc.trigger.template">
+            <field name="product_id" ref="product_product_related0"/>
+            <field name="sequence" eval="1"/>
+            <field name="trigger_id" ref="qc_trigger_input"/>
+            <field name="template_type">related</field>
+            <field name="template_id" ref="qc_test_template_related0"/>
+        </record>
+    </data>
 </openerp>

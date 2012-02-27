@@ -99,10 +99,18 @@ class stock_move(osv.osv):
     
     # stock.move
     def write(self, cr, uid, ids, vals, context=None):
+        if context is None:
+            context = {}
+        
         prodlot_proxy = self.pool.get('stock.production.lot')
         
         res = super(stock_move, self).write(cr, uid, ids, vals, 
                 context)
+        
+        # we will try to create 'test triggers' only when Lot and/or Picking is
+        # setted to Stock Move 
+        if not 'prodlot_id' in vals and not 'picking_id' in vals:
+            return res
         
         if 'input' in context.get('no_create_trigger_test',[]):
             return res
@@ -112,12 +120,19 @@ class stock_move(osv.osv):
         if not input_trigger_id:
             return res
         
+        input_trigger_id = input_trigger_id[0]
         for move in self.browse(cr, uid, ids, context):
             if (not move.picking_id or move.picking_id.type != 'in' or 
                     not move.prodlot_id):
                 continue
-            prodlot_proxy.create_qc_test_triggers(cr, uid, move.prodlot_id, 
-                    input_trigger_id[0], True, context)
+            for test_trigger in move.prodlot_id.qc_test_trigger_ids:
+                if test_trigger.trigger_id.id == input_trigger_id:
+                    break
+            else:
+                # If it comes here, the previous 'FOR' has not break => 
+                #    no test trigger for 'input_trigger_id'
+                prodlot_proxy.create_qc_test_triggers(cr, uid, move.prodlot_id, 
+                        input_trigger_id, True, context)
         
         return res
 stock_move()
