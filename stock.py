@@ -33,45 +33,6 @@ class stock_move(osv.osv):
     _inherit = 'stock.move'
     
     # stock.move
-    def _calc_qc_test_input_vals(self, cr, uid, move, context):
-        reference = 'stock.production.lot,%d' % move.prodlot_id.id
-        return {
-            'object_id': reference,
-        }
-    
-    # stock.move
-    def _calc_qc_test_trigger_ids_input_vals(self, cr, uid, move, trigger_id, 
-            context):
-        if (not move.picking_id or move.picking_id.type != 'in' or 
-                not move.prodlot_id or move.prodlot_id.state != 'draft' or
-                trigger_id in 
-                        [x.id for x in move.prodlot_id.qc_trigger_ids] or
-                trigger_id not in 
-                        [x.id for x in move.product_id.qc_trigger_ids]):
-                return False
-        
-        qc_test_proxy = self.pool.get('qc.test')
-        test_trigger_vals = []
-        for template_trigger in move.product_id.qc_template_trigger_ids:
-            if template_trigger.trigger_id.id != trigger_id:
-                continue
-            
-            test_vals = self._calc_qc_test_input_vals(cr, uid, move, context)
-            test_id = qc_test_proxy.create(cr, uid, test_vals, context)
-            
-            qc_test_proxy.set_test_template(cr, uid, [test_id], 
-                    template_trigger.template_id.id, context)
-            
-            test_trigger_vals.append((0, 0,  {
-                        'sequence': template_trigger.sequence,
-                        'trigger_id': template_trigger.trigger_id.id,
-                        'template_type': template_trigger.template_type,
-                        'test_id': test_id,
-                    }))
-        return test_trigger_vals
-    
-    
-    # stock.move
     def create(self, cr, uid, vals, context=None):
         if context is None:
             context = {}
