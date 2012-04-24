@@ -29,72 +29,72 @@
 
 from osv import osv
 
+
 class stock_move(osv.osv):
     _inherit = 'stock.move'
-    
+
     # stock.move
     def create(self, cr, uid, vals, context=None):
         if context is None:
             context = {}
-        
+
         move_id = super(stock_move, self).create(cr, uid, vals, context)
-        
-        if 'input' in context.get('no_create_trigger_test',[]):
+
+        if 'input' in context.get('no_create_trigger_test', []):
             return move_id
-        
-        input_trigger_id = self.pool.get('qc.trigger').search(cr, uid, 
-                [('name','=','Input')], context=context)
+
+        input_trigger_id = self.pool.get('qc.trigger').search(cr, uid, [
+                    ('name', '=', 'Input'),
+                ], context=context)
         if not input_trigger_id:
             return move_id
-        
+
         move = self.browse(cr, uid, move_id, context)
-        if (not move.picking_id or move.picking_id.type != 'in' or 
+        if (not move.picking_id or move.picking_id.type != 'in' or
                 not move.prodlot_id):
             return move_id
-        
-        self.pool.get('stock.production.lot').create_qc_test_triggers(cr, uid, 
+
+        self.pool.get('stock.production.lot').create_qc_test_triggers(cr, uid,
                 move.prodlot_id, input_trigger_id[0], True, context)
-        
+
         return move_id
-    
-    
+
     # stock.move
     def write(self, cr, uid, ids, vals, context=None):
         if context is None:
             context = {}
-        
+
         prodlot_proxy = self.pool.get('stock.production.lot')
-        
-        res = super(stock_move, self).write(cr, uid, ids, vals, 
-                context)
-        
+
+        res = super(stock_move, self).write(cr, uid, ids, vals, context)
+
         # we will try to create 'test triggers' only when Lot and/or Picking is
-        # setted to Stock Move 
+        # setted to Stock Move
         if not 'prodlot_id' in vals and not 'picking_id' in vals:
             return res
-        
-        if 'input' in context.get('no_create_trigger_test',[]):
+
+        if 'input' in context.get('no_create_trigger_test', []):
             return res
-        
-        input_trigger_id = self.pool.get('qc.trigger').search(cr, uid, 
-                [('name','=','Input')], context=context)
+
+        input_trigger_id = self.pool.get('qc.trigger').search(cr, uid, [
+                    ('name', '=', 'Input'),
+                ], context=context)
         if not input_trigger_id:
             return res
-        
+
         input_trigger_id = input_trigger_id[0]
         for move in self.browse(cr, uid, ids, context):
-            if (not move.picking_id or move.picking_id.type != 'in' or 
+            if (not move.picking_id or move.picking_id.type != 'in' or
                     not move.prodlot_id):
                 continue
             for test_trigger in move.prodlot_id.qc_test_trigger_ids:
                 if test_trigger.trigger_id.id == input_trigger_id:
                     break
             else:
-                # If it comes here, the previous 'FOR' has not break => 
+                # If it comes here, the previous 'FOR' has not break =>
                 #    no test trigger for 'input_trigger_id'
-                prodlot_proxy.create_qc_test_triggers(cr, uid, move.prodlot_id, 
+                prodlot_proxy.create_qc_test_triggers(cr, uid, move.prodlot_id,
                         input_trigger_id, True, context)
-        
         return res
 stock_move()
 

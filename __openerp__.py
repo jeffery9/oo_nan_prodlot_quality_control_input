@@ -28,28 +28,28 @@
 ##############################################################################
 
 {
-    "name" : "Production Lot Quality Control - Input",
-    "version" : "0.2",
-    "author" : "NaN Projectes de Programari Lliure S.L.",
-    "category" : "Generic Modules/Quality Control",
+    "name": "Production Lot Quality Control - Input",
+    "version": "1.0",
+    "author": "NaN Projectes de Programari Lliure S.L.",
+    "category": "Generic Modules/Quality Control",
     "website": "http://www.nan-tic.com",
     "description": """
     Module developed for Trod y Avia, S.L.
-    
-    This module adds quality control to Production Lots on arrival (input 
-    pickings). 
-    The idea is that the first test will be 'Generic' and check for things like 
+
+    This module adds quality control to Production Lots on arrival (input
+    pickings).
+    The idea is that the first test will be 'Generic' and check for things like
     correct packaging. The second will be specific to the product in question.
     """,
-    "depends" : [
+    "depends": [
         'nan_prodlot_quality_control',
         'stock',
     ],
-    "init_xml" : [],
-    "update_xml" : [
+    "init_xml": [],
+    "update_xml": [
         'quality_control_data.xml',
     ],
-    "demo_xml" : [
+    "demo_xml": [
         'prodlot_quality_control_input_demo.xml',
     ],
     "test": [
