@@ -30,8 +30,8 @@
 {
     "name": "Production Lot Quality Control - Input",
     "version": "1.0",
-    "author": "NaN Projectes de Programari Lliure S.L.",
-    "category": "Generic Modules/Quality Control",
+    "author": "NaN·tic",
+    "category": "Quality Control",
     "website": "http://www.nan-tic.com",
     "description": """
     Module developed for Trod y Avia, S.L.
@@ -55,8 +55,15 @@
     "test": [
         'test/prodlot_quality_control_input.yml',
     ],
+    "images": [
+       'images/prodlot_form2.png',
+       'images/prodlot_list.png',
+       'images/product.png',
+       'images/triggers.png',
+    ],
     "active": False,
     "installable": True,
+
 }
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
