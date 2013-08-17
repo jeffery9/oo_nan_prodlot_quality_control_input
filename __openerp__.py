@@ -42,7 +42,7 @@
     correct packaging. The second will be specific to the product in question.
     """,
     "depends": [
-        'nan_prodlot_quality_control',
+        'oo_nan_prodlot_quality_control',
         'stock',
     ],
     "init_xml": [],
